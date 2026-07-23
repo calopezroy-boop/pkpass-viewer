@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>PKPass Viewer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 32px 16px;
+      font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      color: white;
+      background:
+        radial-gradient(
+          circle at top,
+          #1f2937,
+          #05070b 55%
+        );
+    }
+
+    .container {
+      width: min(520px, 100%);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      margin-top: 0;
+      color: #aeb7c6;
+    }
+
+    .upload-box {
+      padding: 22px;
+      margin: 24px 0;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(18px);
+    }
+
+    input {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px 18px;
+      border: 0;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: #1677ff;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+
+    .error {
+      display: none;
+      padding: 14px;
+      margin-bottom: 18px;
+      border-radius: 12px;
+      color: #fecaca;
+      background: #450a0a;
+    }
+
+    .ticket {
+      display: none;
+      overflow: hidden;
+      border-radius: 28px;
+      background: #0d5db9;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
+    }
+
+    .ticket-header {
+      padding: 26px;
+      background: #1768c4;
+    }
+
+    .ticket-body {
+      padding: 26px;
+    }
+
+    .label {
+      margin-bottom: 5px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      opacity: 0.8;
+    }
+
+    .value {
+      margin-bottom: 22px;
+      font-size: 22px;
+    }
+
+    .event-name {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 28px 0;
+      text-align: center;
+    }
+
+    .seat-value {
+      font-size: 30px;
+    }
+
+    .qr-wrapper {
+      padding: 20px;
+      margin: 18px auto 10px;
+      width: min(320px, 100%);
+      border-radius: 16px;
+      background: white;
+    }
+
+    .qr-wrapper img {
+      display: block;
+      width: 100%;
+    }
+
+    .barcode-number {
+      overflow-wrap: anywhere;
+      text-align: center;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <h1>PKPass Viewer</h1>
+    <p class="subtitle">
+      Upload your own Apple Wallet ticket.
+    </p>
+
+    <section class="upload-box">
+      <input
+        id="pkpassFile"
+        type="file"
+        accept=".pkpass"
+      />
+
+      <button id="analyzeButton">
+        Analyze PKPass
+      </button>
+    </section>
+
+    <div id="errorBox" class="error"></div>
+
+    <article id="ticketCard" class="ticket">
+      <header class="ticket-header">
+        <div class="label" id="organizationLabel">
+          TICKET
+        </div>
+
+        <div class="event-name" id="eventName"></div>
+      </header>
+
+      <div class="ticket-body">
+        <div class="label">DATE & TIME</div>
+        <div class="value" id="dateTime"></div>
+
+        <div class="label">VENUE</div>
+        <div class="value" id="venue"></div>
+
+        <div class="seat-grid">
+          <div>
+            <div class="label">SECTION</div>
+            <div class="seat-value" id="section"></div>
+          </div>
+
+          <div>
+            <div class="label">ROW</div>
+            <div class="seat-value" id="row"></div>
+          </div>
+
+          <div>
+            <div class="label">SEAT</div>
+            <div class="seat-value" id="seat"></div>
+          </div>
+        </div>
+
+        <div class="qr-wrapper">
+          <img id="qrImage" alt="Ticket QR code" />
+        </div>
+
+        <div
+          id="barcodeNumber"
+          class="barcode-number"
+        ></div>
+      </div>
+    </article>
+  </main>
+
+  <script>
+    const fileInput =
+      document.getElementById("pkpassFile");
+
+    const analyzeButton =
+      document.getElementById("analyzeButton");
+
+    const ticketCard =
+      document.getElementById("ticketCard");
+
+    const errorBox =
+      document.getElementById("errorBox");
+
+    analyzeButton.addEventListener(
+      "click",
+      async () => {
+        const file = fileInput.files[0];
+
+        errorBox.style.display = "none";
+        ticketCard.style.display = "none";
+
+        if (!file) {
+          showError("Please select a .pkpass file.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("pkpass", file);
+
+        analyzeButton.disabled = true;
+        analyzeButton.textContent = "Analyzing...";
+
+        try {
+          const response = await fetch(
+            "/analyze-pkpass",
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.error || "Unable to analyze file."
+            );
+          }
+
+          document.getElementById(
+            "organizationLabel"
+          ).textContent =
+            data.organization ||
+            data.description ||
+            "TICKET";
+
+          document.getElementById(
+            "eventName"
+          ).textContent = data.event || "Event";
+
+          document.getElementById(
+            "dateTime"
+          ).textContent =
+            `${data.date} ${data.time}`.trim() ||
+            "—";
+
+          document.getElementById(
+            "venue"
+          ).textContent = data.venue || "—";
+
+          document.getElementById(
+            "section"
+          ).textContent = data.section || "—";
+
+          document.getElementById(
+            "row"
+          ).textContent = data.row || "—";
+
+          document.getElementById(
+            "seat"
+          ).textContent = data.seat || "—";
+
+          document.getElementById(
+            "qrImage"
+          ).src = data.qrDataUrl;
+
+          document.getElementById(
+            "barcodeNumber"
+          ).textContent = data.barcodeMessage;
+
+          ticketCard.style.display = "block";
+        } catch (error) {
+          showError(error.message);
+        } finally {
+          analyzeButton.disabled = false;
+          analyzeButton.textContent =
+            "Analyze PKPass";
+        }
+      }
+    );
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = "block";
+    }
+  </script>
+</body>
+</html>
