@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -18,6 +19,7 @@
       min-height: 100vh;
       margin: 0;
       padding: 32px 16px;
+
       font-family:
         Inter,
         system-ui,
@@ -25,7 +27,9 @@
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
+
       color: white;
+
       background:
         radial-gradient(
           circle at top,
@@ -51,8 +55,10 @@
     .upload-box {
       padding: 22px;
       margin: 24px 0;
+
       border: 1px solid #334155;
       border-radius: 20px;
+
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(18px);
     }
@@ -65,13 +71,21 @@
     button {
       width: 100%;
       padding: 14px 18px;
+
       border: 0;
       border-radius: 14px;
+
       font-size: 16px;
       font-weight: 700;
+
       cursor: pointer;
+
       color: white;
       background: #1677ff;
+    }
+
+    button:hover {
+      filter: brightness(1.06);
     }
 
     button:disabled {
@@ -81,9 +95,12 @@
 
     .error {
       display: none;
+
       padding: 14px;
       margin-bottom: 18px;
+
       border-radius: 12px;
+
       color: #fecaca;
       background: #450a0a;
     }
@@ -91,9 +108,13 @@
     .ticket {
       display: none;
       overflow: hidden;
+
       border-radius: 28px;
+
       background: #0d5db9;
-      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.45);
+
+      box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.45);
     }
 
     .ticket-header {
@@ -107,9 +128,11 @@
 
     .label {
       margin-bottom: 5px;
+
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 0.09em;
+
       opacity: 0.8;
     }
 
@@ -126,8 +149,10 @@
     .seat-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
+
       gap: 14px;
       margin: 28px 0;
+
       text-align: center;
     }
 
@@ -136,9 +161,11 @@
     }
 
     .qr-wrapper {
+      width: min(320px, 100%);
+
       padding: 20px;
       margin: 18px auto 10px;
-      width: min(320px, 100%);
+
       border-radius: 16px;
       background: white;
     }
@@ -150,16 +177,167 @@
 
     .barcode-number {
       overflow-wrap: anywhere;
+
       text-align: center;
       font-family: monospace;
       font-size: 14px;
     }
+
+    .download-area {
+      display: none;
+      margin-top: 18px;
+    }
+
+    #downloadTicketButton {
+      background: #16a34a;
+    }
+
+    #downloadTicketButton:hover {
+      background: #15803d;
+    }
+
+    .privacy-note {
+      margin: 12px 4px 0;
+
+      color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    /* Mobile ticket used only for PNG export */
+.mobile-export-ticket {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+
+  width: 390px;
+  min-height: 844px;
+  padding: 18px;
+
+  color: white;
+  background: #101318;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.mobile-pass {
+  display: flex;
+  flex-direction: column;
+
+  width: 100%;
+  min-height: 808px;
+  overflow: hidden;
+
+  border-radius: 28px;
+  background:
+    linear-gradient(
+      180deg,
+      #2476d1 0%,
+      #0e5db8 100%
+    );
+
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.mobile-pass-header {
+  padding: 24px 22px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mobile-pass-organization {
+  margin-bottom: 10px;
+
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.mobile-pass-event {
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.mobile-pass-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+
+  padding: 24px 22px;
+}
+
+.mobile-export-label {
+  margin-bottom: 5px;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+
+  opacity: 0.8;
+}
+
+.mobile-export-value {
+  margin-bottom: 22px;
+
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.mobile-seat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 10px;
+  margin: 8px 0 26px;
+
+  text-align: center;
+}
+
+.mobile-seat-value {
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.mobile-qr-section {
+  margin-top: auto;
+  text-align: center;
+}
+
+.mobile-qr-wrapper {
+  width: 270px;
+  padding: 18px;
+  margin: 0 auto 12px;
+
+  border-radius: 18px;
+  background: white;
+}
+
+.mobile-qr-wrapper img {
+  display: block;
+  width: 100%;
+}
+
+.mobile-barcode-number {
+  padding-bottom: 6px;
+
+  font-family: monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
   </style>
 </head>
 
 <body>
   <main class="container">
     <h1>PKPass Viewer</h1>
+
     <p class="subtitle">
       Upload your own Apple Wallet ticket.
     </p>
@@ -176,43 +354,88 @@
       </button>
     </section>
 
-    <div id="errorBox" class="error"></div>
+    <div
+      id="errorBox"
+      class="error"
+    ></div>
 
-    <article id="ticketCard" class="ticket">
+    <article
+      id="ticketCard"
+      class="ticket"
+    >
       <header class="ticket-header">
-        <div class="label" id="organizationLabel">
+        <div
+          class="label"
+          id="organizationLabel"
+        >
           TICKET
         </div>
 
-        <div class="event-name" id="eventName"></div>
+        <div
+          class="event-name"
+          id="eventName"
+        ></div>
       </header>
 
       <div class="ticket-body">
-        <div class="label">DATE & TIME</div>
-        <div class="value" id="dateTime"></div>
+        <div class="label">
+          DATE &amp; TIME
+        </div>
 
-        <div class="label">VENUE</div>
-        <div class="value" id="venue"></div>
+        <div
+          class="value"
+          id="dateTime"
+        ></div>
+
+        <div class="label">
+          VENUE
+        </div>
+
+        <div
+          class="value"
+          id="venue"
+        ></div>
 
         <div class="seat-grid">
           <div>
-            <div class="label">SECTION</div>
-            <div class="seat-value" id="section"></div>
+            <div class="label">
+              SECTION
+            </div>
+
+            <div
+              class="seat-value"
+              id="section"
+            ></div>
           </div>
 
           <div>
-            <div class="label">ROW</div>
-            <div class="seat-value" id="row"></div>
+            <div class="label">
+              ROW
+            </div>
+
+            <div
+              class="seat-value"
+              id="row"
+            ></div>
           </div>
 
           <div>
-            <div class="label">SEAT</div>
-            <div class="seat-value" id="seat"></div>
+            <div class="label">
+              SEAT
+            </div>
+
+            <div
+              class="seat-value"
+              id="seat"
+            ></div>
           </div>
         </div>
 
         <div class="qr-wrapper">
-          <img id="qrImage" alt="Ticket QR code" />
+          <img
+            id="qrImage"
+            alt="Ticket QR code"
+          />
         </div>
 
         <div
@@ -221,7 +444,115 @@
         ></div>
       </div>
     </article>
+
+    <section
+      id="downloadArea"
+      class="download-area"
+    >
+      <button id="downloadTicketButton">
+        Download Ticket Image
+      </button>
+
+      <p class="privacy-note">
+        The downloaded image contains a live ticket
+        barcode. Keep it private and share it only with
+        authorized team members.
+      </p>
+    </section>
   </main>
+<section
+  id="mobileExportTicket"
+  class="mobile-export-ticket"
+  aria-hidden="true"
+>
+  <article class="mobile-pass">
+    <header class="mobile-pass-header">
+      <div
+        id="mobileOrganization"
+        class="mobile-pass-organization"
+      >
+        TICKET
+      </div>
+
+      <div
+        id="mobileEvent"
+        class="mobile-pass-event"
+      ></div>
+    </header>
+
+    <div class="mobile-pass-body">
+      <div class="mobile-export-label">
+        DATE &amp; TIME
+      </div>
+
+      <div
+        id="mobileDateTime"
+        class="mobile-export-value"
+      ></div>
+
+      <div class="mobile-export-label">
+        VENUE
+      </div>
+
+      <div
+        id="mobileVenue"
+        class="mobile-export-value"
+      ></div>
+
+      <div class="mobile-seat-grid">
+        <div>
+          <div class="mobile-export-label">
+            SECTION
+          </div>
+
+          <div
+            id="mobileSection"
+            class="mobile-seat-value"
+          ></div>
+        </div>
+
+        <div>
+          <div class="mobile-export-label">
+            ROW
+          </div>
+
+          <div
+            id="mobileRow"
+            class="mobile-seat-value"
+          ></div>
+        </div>
+
+        <div>
+          <div class="mobile-export-label">
+            SEAT
+          </div>
+
+          <div
+            id="mobileSeat"
+            class="mobile-seat-value"
+          ></div>
+        </div>
+      </div>
+
+      <div class="mobile-qr-section">
+        <div class="mobile-qr-wrapper">
+          <img
+            id="mobileQrImage"
+            alt="Ticket QR code"
+          />
+        </div>
+
+        <div
+          id="mobileBarcodeNumber"
+          class="mobile-barcode-number"
+        ></div>
+      </div>
+    </div>
+  </article>
+</section>
+  <script
+    src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+  ></script>
 
   <script>
     const fileInput =
@@ -236,6 +567,17 @@
     const errorBox =
       document.getElementById("errorBox");
 
+    const downloadArea =
+      document.getElementById("downloadArea");
+
+    const downloadTicketButton =
+      document.getElementById(
+        "downloadTicketButton"
+      );
+
+    const qrImage =
+      document.getElementById("qrImage");
+
     analyzeButton.addEventListener(
       "click",
       async () => {
@@ -243,17 +585,40 @@
 
         errorBox.style.display = "none";
         ticketCard.style.display = "none";
+        downloadArea.style.display = "none";
 
         if (!file) {
-          showError("Please select a .pkpass file.");
+          showError(
+            "Please select a .pkpass file."
+          );
+
+          return;
+        }
+
+        const isPkpass =
+          file.name
+            .toLowerCase()
+            .endsWith(".pkpass");
+
+        if (!isPkpass) {
+          showError(
+            "Please upload a valid .pkpass file."
+          );
+
           return;
         }
 
         const formData = new FormData();
-        formData.append("pkpass", file);
+
+        formData.append(
+          "pkpass",
+          file
+        );
 
         analyzeButton.disabled = true;
-        analyzeButton.textContent = "Analyzing...";
+
+        analyzeButton.textContent =
+          "Analyzing...";
 
         try {
           const response = await fetch(
@@ -264,11 +629,13 @@
             }
           );
 
-          const data = await response.json();
+          const data =
+            await response.json();
 
           if (!response.ok) {
             throw new Error(
-              data.error || "Unable to analyze file."
+              data.error ||
+              "Unable to analyze file."
             );
           }
 
@@ -281,48 +648,293 @@
 
           document.getElementById(
             "eventName"
-          ).textContent = data.event || "Event";
+          ).textContent =
+            data.event || "Event";
 
           document.getElementById(
             "dateTime"
           ).textContent =
-            `${data.date} ${data.time}`.trim() ||
-            "—";
+            `${data.date || ""} ${
+              data.time || ""
+            }`.trim() || "—";
 
           document.getElementById(
             "venue"
-          ).textContent = data.venue || "—";
+          ).textContent =
+            data.venue || "—";
 
           document.getElementById(
             "section"
-          ).textContent = data.section || "—";
+          ).textContent =
+            data.section || "—";
 
           document.getElementById(
             "row"
-          ).textContent = data.row || "—";
+          ).textContent =
+            data.row || "—";
 
           document.getElementById(
             "seat"
-          ).textContent = data.seat || "—";
-
-          document.getElementById(
-            "qrImage"
-          ).src = data.qrDataUrl;
+          ).textContent =
+            data.seat || "—";
 
           document.getElementById(
             "barcodeNumber"
-          ).textContent = data.barcodeMessage;
+          ).textContent =
+            data.barcodeMessage || "";
 
-          ticketCard.style.display = "block";
+          qrImage.src =
+            data.qrDataUrl;
+
+          await waitForImage(qrImage);
+
+          ticketCard.style.display =
+            "block";
+
+          downloadArea.style.display =
+            "block";
         } catch (error) {
-          showError(error.message);
+          showError(
+            error instanceof Error
+              ? error.message
+              : "Unable to analyze the ticket."
+          );
         } finally {
           analyzeButton.disabled = false;
+
           analyzeButton.textContent =
             "Analyze PKPass";
         }
       }
     );
+
+    downloadTicketButton.addEventListener(
+  "click",
+  async () => {
+    try {
+      downloadTicketButton.disabled = true;
+
+      downloadTicketButton.textContent =
+        "Preparing Mobile Ticket...";
+
+      const mobileExportTicket =
+        document.getElementById(
+          "mobileExportTicket"
+        );
+
+      const mobileQrImage =
+        document.getElementById(
+          "mobileQrImage"
+        );
+
+      // Copy the displayed ticket data
+      // into the mobile export design.
+      document.getElementById(
+        "mobileOrganization"
+      ).textContent =
+        getText("organizationLabel") ||
+        "TICKET";
+
+      document.getElementById(
+        "mobileEvent"
+      ).textContent =
+        getText("eventName") ||
+        "Event";
+
+      document.getElementById(
+        "mobileDateTime"
+      ).textContent =
+        getText("dateTime") ||
+        "—";
+
+      document.getElementById(
+        "mobileVenue"
+      ).textContent =
+        getText("venue") ||
+        "—";
+
+      document.getElementById(
+        "mobileSection"
+      ).textContent =
+        getText("section") ||
+        "—";
+
+      document.getElementById(
+        "mobileRow"
+      ).textContent =
+        getText("row") ||
+        "—";
+
+      document.getElementById(
+        "mobileSeat"
+      ).textContent =
+        getText("seat") ||
+        "—";
+
+      document.getElementById(
+        "mobileBarcodeNumber"
+      ).textContent =
+        getText("barcodeNumber");
+
+      mobileQrImage.src = qrImage.src;
+
+      await waitForImage(mobileQrImage);
+
+      const canvas =
+        await html2canvas(
+          mobileExportTicket,
+          {
+            scale: 3,
+            width: 390,
+            height: 844,
+            windowWidth: 390,
+            windowHeight: 844,
+            backgroundColor: "#101318",
+            useCORS: true,
+            logging: false,
+          }
+        );
+
+      const imageBlob =
+        await new Promise(
+          (resolve, reject) => {
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  resolve(blob);
+                } else {
+                  reject(
+                    new Error(
+                      "Unable to generate image."
+                    )
+                  );
+                }
+              },
+              "image/png",
+              1
+            );
+          }
+        );
+
+      const imageUrl =
+        URL.createObjectURL(imageBlob);
+
+      const link =
+        document.createElement("a");
+
+      link.href = imageUrl;
+      link.download =
+        createTicketFilename();
+
+      document.body.appendChild(link);
+
+      link.click();
+      link.remove();
+
+      setTimeout(() => {
+        URL.revokeObjectURL(imageUrl);
+      }, 1000);
+    } catch (error) {
+      console.error(error);
+
+      showError(
+        "Unable to download the mobile ticket image."
+      );
+    } finally {
+      downloadTicketButton.disabled =
+        false;
+
+      downloadTicketButton.textContent =
+        "Download Mobile Ticket";
+    }
+  }
+);
+
+    function waitForImage(image) {
+      if (
+        image.complete &&
+        image.naturalWidth > 0
+      ) {
+        return Promise.resolve();
+      }
+
+      return new Promise(
+        (resolve, reject) => {
+          image.addEventListener(
+            "load",
+            resolve,
+            {
+              once: true,
+            }
+          );
+
+          image.addEventListener(
+            "error",
+            () => {
+              reject(
+                new Error(
+                  "The ticket barcode failed to load."
+                )
+              );
+            },
+            {
+              once: true,
+            }
+          );
+        }
+      );
+    }
+
+    function createTicketFilename() {
+      const eventName =
+        getText("eventName") ||
+        "ticket";
+
+      const section =
+        getText("section");
+
+      const row =
+        getText("row");
+
+      const seat =
+        getText("seat");
+
+      const parts = [
+        eventName,
+        section &&
+          section !== "—"
+          ? `section-${section}`
+          : "",
+        row &&
+          row !== "—"
+          ? `row-${row}`
+          : "",
+        seat &&
+          seat !== "—"
+          ? `seat-${seat}`
+          : "",
+      ].filter(Boolean);
+
+      const safeName =
+        parts
+          .join("-")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+
+      return `${
+        safeName || "ticket"
+      }.png`;
+    }
+
+    function getText(elementId) {
+      return (
+        document
+          .getElementById(elementId)
+          ?.textContent
+          ?.trim() || ""
+      );
+    }
 
     function showError(message) {
       errorBox.textContent = message;
