@@ -9,8 +9,6 @@ import { fileURLToPath } from "node:url";
 
 const app = express();
 
-// Render assigns its own port.
-// Local use will remain on port 3003.
 const PORT = process.env.PORT || 3003;
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,7 +19,6 @@ const uploadsDirectory = path.join(
   "uploads"
 );
 
-// Automatically create the temporary uploads folder.
 await fs.mkdir(uploadsDirectory, {
   recursive: true,
 });
@@ -44,6 +41,12 @@ app.use(
     index: false,
   })
 );
+
+/*
+|--------------------------------------------------------------------------
+| Upload Configuration
+|--------------------------------------------------------------------------
+*/
 
 const upload = multer({
   dest: uploadsDirectory,
@@ -69,12 +72,139 @@ const upload = multer({
   },
 });
 
+/*
+|--------------------------------------------------------------------------
+| Helper Functions
+|--------------------------------------------------------------------------
+*/
+
 function findField(fields = [], key) {
+  const normalizedKey =
+    String(key).toLowerCase();
+
   return (
-    fields.find((field) => field.key === key)
-      ?.value ?? ""
+    fields.find((field) => {
+      return (
+        String(field?.key ?? "")
+          .toLowerCase() === normalizedKey
+      );
+    })?.value ?? ""
   );
 }
+
+function getMimeType(filename) {
+  const lowerName =
+    filename.toLowerCase();
+
+  if (lowerName.endsWith(".png")) {
+    return "image/png";
+  }
+
+  if (
+    lowerName.endsWith(".jpg") ||
+    lowerName.endsWith(".jpeg")
+  ) {
+    return "image/jpeg";
+  }
+
+  return "application/octet-stream";
+}
+
+async function getAssetDataUrl(
+  zip,
+  possibleFilenames
+) {
+  const zipEntries =
+    Object.keys(zip.files);
+
+  for (
+    const possibleFilename
+    of possibleFilenames
+  ) {
+    const targetName =
+      possibleFilename.toLowerCase();
+
+    const matchingPath =
+      zipEntries.find((entryName) => {
+        const normalizedEntry =
+          entryName
+            .replaceAll("\\", "/")
+            .toLowerCase();
+
+        return (
+          normalizedEntry === targetName ||
+          normalizedEntry.endsWith(
+            `/${targetName}`
+          )
+        );
+      });
+
+    if (!matchingPath) {
+      continue;
+    }
+
+    const assetFile =
+      zip.file(matchingPath);
+
+    if (!assetFile || assetFile.dir) {
+      continue;
+    }
+
+    const assetBase64 =
+      await assetFile.async("base64");
+
+    const mimeType =
+      getMimeType(matchingPath);
+
+    return (
+      `data:${mimeType};base64,` +
+      assetBase64
+    );
+  }
+
+  return "";
+}
+
+function getPassType(pass) {
+  if (pass.eventTicket) {
+    return "eventTicket";
+  }
+
+  if (pass.boardingPass) {
+    return "boardingPass";
+  }
+
+  if (pass.storeCard) {
+    return "storeCard";
+  }
+
+  if (pass.coupon) {
+    return "coupon";
+  }
+
+  if (pass.generic) {
+    return "generic";
+  }
+
+  return "unknown";
+}
+
+function getPassFields(pass) {
+  return (
+    pass.eventTicket ??
+    pass.generic ??
+    pass.boardingPass ??
+    pass.coupon ??
+    pass.storeCard ??
+    {}
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Analyze PKPass
+|--------------------------------------------------------------------------
+*/
 
 app.post(
   "/analyze-pkpass",
@@ -86,19 +216,30 @@ app.post(
     try {
       if (!req.file) {
         return res.status(400).json({
-          error: "No .pkpass file uploaded.",
+          error:
+            "No .pkpass file uploaded.",
         });
       }
 
       uploadedPath = req.file.path;
 
       const pkpassBuffer =
-        await fs.readFile(uploadedPath);
+        await fs.readFile(
+          uploadedPath
+        );
 
       const zip =
-        await JSZip.loadAsync(pkpassBuffer);
+        await JSZip.loadAsync(
+          pkpassBuffer
+        );
 
-      const passFile = zip.file("pass.json");
+      console.log(
+        "PKPass files:",
+        Object.keys(zip.files)
+      );
+
+      const passFile =
+        zip.file("pass.json");
 
       if (!passFile) {
         return res.status(400).json({
@@ -110,15 +251,101 @@ app.post(
       const passText =
         await passFile.async("string");
 
-      const pass = JSON.parse(passText);
+      const pass =
+        JSON.parse(passText);
+
+      /*
+      |--------------------------------------------------------------------------
+      | Extract Original PKPass Assets
+      |--------------------------------------------------------------------------
+      */
+
+      const logoImage =
+        await getAssetDataUrl(
+          zip,
+          [
+            "logo@3x.png",
+            "logo@2x.png",
+            "logo.png",
+            "logo@3x.jpg",
+            "logo@2x.jpg",
+            "logo.jpg",
+          ]
+        );
+
+      const stripImage =
+        await getAssetDataUrl(
+          zip,
+          [
+            "strip@3x.png",
+            "strip@2x.png",
+            "strip.png",
+            "strip@3x.jpg",
+            "strip@2x.jpg",
+            "strip.jpg",
+          ]
+        );
+
+      const thumbnailImage =
+        await getAssetDataUrl(
+          zip,
+          [
+            "thumbnail@3x.png",
+            "thumbnail@2x.png",
+            "thumbnail.png",
+            "thumbnail@3x.jpg",
+            "thumbnail@2x.jpg",
+            "thumbnail.jpg",
+          ]
+        );
+
+      const iconImage =
+        await getAssetDataUrl(
+          zip,
+          [
+            "icon@3x.png",
+            "icon@2x.png",
+            "icon.png",
+            "icon@3x.jpg",
+            "icon@2x.jpg",
+            "icon.jpg",
+          ]
+        );
+
+      const backgroundImage =
+        await getAssetDataUrl(
+          zip,
+          [
+            "background@3x.png",
+            "background@2x.png",
+            "background.png",
+            "background@3x.jpg",
+            "background@2x.jpg",
+            "background.jpg",
+          ]
+        );
+
+      const footerImage =
+        await getAssetDataUrl(
+          zip,
+          [
+            "footer@3x.png",
+            "footer@2x.png",
+            "footer.png",
+            "footer@3x.jpg",
+            "footer@2x.jpg",
+            "footer.jpg",
+          ]
+        );
+
+      /*
+      |--------------------------------------------------------------------------
+      | Read Ticket Fields
+      |--------------------------------------------------------------------------
+      */
 
       const ticket =
-        pass.eventTicket ??
-        pass.generic ??
-        pass.boardingPass ??
-        pass.coupon ??
-        pass.storeCard ??
-        {};
+        getPassFields(pass);
 
       const primaryFields =
         ticket.primaryFields ?? [];
@@ -143,6 +370,12 @@ app.post(
         ...backFields,
       ];
 
+      /*
+      |--------------------------------------------------------------------------
+      | Barcode
+      |--------------------------------------------------------------------------
+      */
+
       const barcode =
         pass.barcodes?.[0] ??
         pass.barcode ??
@@ -155,16 +388,16 @@ app.post(
         });
       }
 
+      const barcodeMessage =
+        String(barcode.message);
+
       /*
-       * Current Version:
-       * Generates a QR code from the barcode message.
-       *
-       * Before using non-QR NCAA passes, we will add
-       * native PDF417 and Aztec rendering.
+       * Current version renders the value as a QR code.
+       * Native PDF417 and Aztec support can be added later.
        */
       const qrDataUrl =
         await QRCode.toDataURL(
-          String(barcode.message),
+          barcodeMessage,
           {
             width: 700,
             margin: 3,
@@ -172,13 +405,83 @@ app.post(
           }
         );
 
+      /*
+      |--------------------------------------------------------------------------
+      | Ticket Details
+      |--------------------------------------------------------------------------
+      */
+
       const eventName =
-        findField(allFields, "event") ||
-        findField(allFields, "eventName") ||
+        findField(
+          allFields,
+          "event"
+        ) ||
+        findField(
+          allFields,
+          "eventName"
+        ) ||
         primaryFields[0]?.value ||
         secondaryFields[0]?.value ||
         pass.description ||
         "";
+
+      const venue =
+        findField(
+          allFields,
+          "venue"
+        ) ||
+        findField(
+          allFields,
+          "location"
+        );
+
+      const section =
+        findField(
+          allFields,
+          "section"
+        ) ||
+        findField(
+          allFields,
+          "sec"
+        );
+
+      const row =
+        findField(
+          allFields,
+          "row"
+        );
+
+      const seat =
+        findField(
+          allFields,
+          "seat"
+        ) ||
+        findField(
+          allFields,
+          "seatNumber"
+        );
+
+      const date =
+        findField(
+          allFields,
+          "date"
+        ) ||
+        headerFields[0]?.value ||
+        "";
+
+      const time =
+        findField(
+          allFields,
+          "time"
+        ) ||
+        headerFields[0]?.label ||
+        "";
+
+      /*
+      |--------------------------------------------------------------------------
+      | Response
+      |--------------------------------------------------------------------------
+      */
 
       return res.json({
         description:
@@ -187,37 +490,58 @@ app.post(
         organization:
           pass.organizationName ?? "",
 
-        event: eventName,
-
-        venue:
-          findField(allFields, "venue") ||
-          findField(allFields, "location"),
-
-        section:
-          findField(allFields, "section") ||
-          findField(allFields, "sec"),
-
-        row:
-          findField(allFields, "row"),
-
-        seat:
-          findField(allFields, "seat") ||
-          findField(allFields, "seatNumber"),
-
-        date:
-          findField(allFields, "date") ||
-          headerFields[0]?.value ||
+        logoText:
+          pass.logoText ||
+          pass.organizationName ||
           "",
 
-        time:
-          findField(allFields, "time") ||
-          "",
+        passType:
+          getPassType(pass),
+
+        event:
+          eventName,
+
+        venue,
+
+        section,
+
+        row,
+
+        seat,
+
+        date,
+
+        time,
+
+        backgroundColor:
+          pass.backgroundColor ||
+          "#0d5db9",
+
+        foregroundColor:
+          pass.foregroundColor ||
+          "#ffffff",
+
+        labelColor:
+          pass.labelColor ||
+          pass.foregroundColor ||
+          "#ffffff",
+
+        logoImage,
+
+        stripImage,
+
+        thumbnailImage,
+
+        iconImage,
+
+        backgroundImage,
+
+        footerImage,
 
         barcodeFormat:
           barcode.format ?? "",
 
-        barcodeMessage:
-          String(barcode.message),
+        barcodeMessage,
 
         barcodeAlternateText:
           barcode.altText ?? "",
@@ -248,34 +572,64 @@ app.post(
   }
 );
 
-// Friendly handling for Multer/upload errors.
-app.use((error, req, res, next) => {
-  if (error instanceof multer.MulterError) {
-    return res.status(400).json({
-      error:
-        error.code === "LIMIT_FILE_SIZE"
-          ? "The PKPass exceeds the 10 MB limit."
-          : error.message,
-    });
-  }
+/*
+|--------------------------------------------------------------------------
+| Upload Error Handling
+|--------------------------------------------------------------------------
+*/
 
-  if (error instanceof Error) {
-    return res.status(400).json({
-      error: error.message,
-    });
-  }
+app.use(
+  (error, req, res, next) => {
+    if (
+      error instanceof
+      multer.MulterError
+    ) {
+      return res.status(400).json({
+        error:
+          error.code ===
+          "LIMIT_FILE_SIZE"
+            ? "The PKPass exceeds the 10 MB limit."
+            : error.message,
+      });
+    }
 
-  next(error);
-});
+    if (error instanceof Error) {
+      return res.status(400).json({
+        error: error.message,
+      });
+    }
+
+    next(error);
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| Frontend
+|--------------------------------------------------------------------------
+*/
 
 app.get("/", (req, res) => {
   res.sendFile(
-    path.join(__dirname, "index.html")
+    path.join(
+      __dirname,
+      "index.html"
+    )
   );
 });
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `PKPass Viewer running on port ${PORT}`
-  );
-});
+/*
+|--------------------------------------------------------------------------
+| Start Server
+|--------------------------------------------------------------------------
+*/
+
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `PKPass Viewer running on port ${PORT}`
+    );
+  }
+);
