@@ -254,12 +254,12 @@
     }
 
     .qr-wrapper {
-      width: min(230px, 72%);
+      width: min(300px, 88%);
 
-      padding: 12px;
+      padding: 7px 8px 9px;
       margin: 16px auto 8px;
 
-      border-radius: 16px;
+      border-radius: 10px;
       background: white;
     }
 
@@ -269,14 +269,17 @@
     }
 
     .barcode-number {
-      margin-top: 7px;
-      overflow-wrap: anywhere;
+      width: 100%;
+      margin-top: 5px;
+      overflow: hidden;
 
       color: #111111;
       text-align: center;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 17px;
+      font-size: 25px;
+      letter-spacing: 0.01em;
       line-height: 1.15;
+      white-space: nowrap;
     }
 
     @media (max-width: 440px) {
@@ -497,12 +500,12 @@
     }
 
     .mobile-qr-wrapper {
-      width: 245px;
+      width: 285px;
 
-      padding: 16px;
+      padding: 7px 8px 9px;
       margin: 0 auto 10px;
 
-      border-radius: 12px;
+      border-radius: 10px;
       background: white;
     }
 
@@ -512,14 +515,17 @@
     }
 
     .mobile-barcode-number {
-      padding: 7px 2px 2px;
+      width: 100%;
+      padding: 5px 0 0;
 
-      overflow-wrap: anywhere;
+      overflow: hidden;
 
       color: #111111;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 15px;
+      font-size: 23px;
+      letter-spacing: 0.01em;
       line-height: 1.15;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -866,6 +872,8 @@
 
         downloadArea.style.display =
           "block";
+
+        fitBarcodeNumbers();
       } catch (error) {
         console.error(error);
 
@@ -992,6 +1000,33 @@
       return String(value ?? "")
         .trim()
         .toLocaleLowerCase();
+    }
+
+    function fitBarcodeNumbers() {
+      fitTextToWidth(
+        document.getElementById("barcodeNumber"),
+        25
+      );
+
+      fitTextToWidth(
+        document.getElementById("mobileBarcodeNumber"),
+        23
+      );
+    }
+
+    function fitTextToWidth(element, maximumSize) {
+      if (!element) return;
+
+      let fontSize = maximumSize;
+      element.style.fontSize = `${fontSize}px`;
+
+      while (
+        fontSize > 10 &&
+        element.scrollWidth > element.clientWidth
+      ) {
+        fontSize -= 0.5;
+        element.style.fontSize = `${fontSize}px`;
+      }
     }
 
     function populateMobileExport(data) {
@@ -1273,6 +1308,7 @@
           currentPassData.qrDataUrl;
 
         await waitForRequiredImages();
+        fitBarcodeNumbers();
 
         const mobileExport =
           document.getElementById(
