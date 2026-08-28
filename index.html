@@ -438,11 +438,11 @@
       left: -10000px;
 
       width: 390px;
-      height: 844px;
-      padding: 14px;
+      height: 816px;
+      padding: 0;
 
       color: white;
-      background: #101318;
+      background: transparent;
 
       font-family:
         Inter,
@@ -605,6 +605,26 @@
       font-size: 27px;
       font-weight: 500;
     }
+
+    .mobile-field-row {
+      display: grid;
+      grid-template-columns: repeat(var(--field-count, 1), minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .mobile-field-group:empty { display: none; }
+    .mobile-field { min-width: 0; }
+    .mobile-field.align-center { text-align: center; }
+    .mobile-field.align-right { text-align: right; }
+
+    .mobile-field-value {
+      overflow-wrap: anywhere;
+      font-size: 18px;
+      line-height: 1.18;
+    }
+
+    .mobile-primary-value { font-size: 20px; }
 
     .mobile-qr-section {
       margin-top: auto;
@@ -821,58 +841,15 @@
       </div>
 
       <div class="mobile-body">
-        <div class="mobile-label">
-          EVENT
-        </div>
-
         <div
-          id="mobileEvent"
-          class="mobile-value mobile-event"
+          id="mobilePrimaryFields"
         ></div>
 
-        <div class="mobile-label">
-          VENUE
-        </div>
-
         <div
-          id="mobileVenue"
-          class="mobile-value mobile-venue"
+          id="mobileSecondaryFields"
         ></div>
 
-        <div class="mobile-seat-grid">
-          <div>
-            <div class="mobile-label">
-              SECTION
-            </div>
-
-            <div
-              id="mobileSection"
-              class="mobile-seat-value"
-            ></div>
-          </div>
-
-          <div>
-            <div class="mobile-label">
-              ROW
-            </div>
-
-            <div
-              id="mobileRow"
-              class="mobile-seat-value"
-            ></div>
-          </div>
-
-          <div>
-            <div class="mobile-label">
-              SEAT
-            </div>
-
-            <div
-              id="mobileSeat"
-              class="mobile-seat-value"
-            ></div>
-          </div>
-        </div>
+        <div id="mobileAuxiliaryFields"></div>
 
         <div class="mobile-qr-section">
           <div class="mobile-qr-wrapper">
@@ -1171,24 +1148,11 @@
     }
 
     function populatePreview(data) {
-      const primaryFields =
-        data.fields?.primary || [];
-
       const secondaryFields =
         data.fields?.secondary || [];
 
       const visiblePrimaryFields =
-        primaryFields.filter((primaryField) => {
-          return !secondaryFields.some(
-            (secondaryField) =>
-              normalizeFieldValue(
-                secondaryField.value
-              ) ===
-              normalizeFieldValue(
-                primaryField.value
-              )
-          );
-        });
+        getVisiblePrimaryFields(data);
 
       setText(
         "organizationLabel",
@@ -1342,35 +1306,81 @@
         formatFieldValue(data.date || "")
       );
 
-      setText(
-        "mobileEvent",
-        data.event || "Event"
+      renderMobileFieldRow(
+        "mobilePrimaryFields",
+        data.fields
+          ? getVisiblePrimaryFields(data)
+          : [{ label: "EVENT", value: data.event || "Event" }],
+        "mobile-primary-value"
       );
 
-      setText(
-        "mobileVenue",
-        data.venue || "—"
+      renderMobileFieldRow(
+        "mobileSecondaryFields",
+        data.fields
+          ? data.fields.secondary || []
+          : [{ label: "VENUE", value: data.venue || "—" }]
       );
 
-      setText(
-        "mobileSection",
-        data.section || "—"
-      );
-
-      setText(
-        "mobileRow",
-        data.row || "—"
-      );
-
-      setText(
-        "mobileSeat",
-        data.seat || "—"
+      renderMobileFieldRow(
+        "mobileAuxiliaryFields",
+        data.fields?.auxiliary?.length
+          ? data.fields.auxiliary
+          : [
+              { label: "SECTION", value: data.section || "—" },
+              { label: "ROW", value: data.row || "—" },
+              { label: "SEAT", value: data.seat || "—" },
+            ]
       );
 
       setText(
         "mobileBarcodeNumber",
         data.barcodeMessage || ""
       );
+    }
+
+    function getVisiblePrimaryFields(data) {
+      const primaryFields = data.fields?.primary || [];
+      const secondaryFields = data.fields?.secondary || [];
+
+      return primaryFields.filter((primaryField) => {
+        return !secondaryFields.some((secondaryField) => {
+          return (
+            normalizeFieldValue(secondaryField.value) ===
+            normalizeFieldValue(primaryField.value)
+          );
+        });
+      });
+    }
+
+    function renderMobileFieldRow(elementId, fields, valueClass = "") {
+      const group = document.getElementById(elementId);
+      group.replaceChildren();
+      group.className = "mobile-field-group";
+
+      for (let start = 0; start < fields.length; start += 3) {
+        const chunk = fields.slice(start, start + 3);
+        const row = document.createElement("div");
+        row.className = "mobile-field-row";
+        row.style.setProperty("--field-count", chunk.length);
+
+        chunk.forEach((field) => {
+          const item = document.createElement("div");
+          item.className = `mobile-field ${getAlignmentClass(field.textAlignment)}`;
+
+          const label = document.createElement("div");
+          label.className = "mobile-label";
+          label.textContent = field.label || "";
+
+          const value = document.createElement("div");
+          value.className = `mobile-field-value ${valueClass}`.trim();
+          value.textContent = formatFieldValue(field.value);
+
+          item.append(label, value);
+          row.append(item);
+        });
+
+        group.append(row);
+      }
     }
 
     function applyPassDesign(data) {
@@ -1583,10 +1593,10 @@
       const canvas = await html2canvas(mobileExport, {
         scale: 3,
         width: 390,
-        height: 844,
+        height: 816,
         windowWidth: 390,
-        windowHeight: 844,
-        backgroundColor: "#101318",
+        windowHeight: 816,
+        backgroundColor: null,
         useCORS: true,
         logging: false,
       });
