@@ -877,6 +877,25 @@
     }
 
     function populatePreview(data) {
+      const primaryFields =
+        data.fields?.primary || [];
+
+      const secondaryFields =
+        data.fields?.secondary || [];
+
+      const visiblePrimaryFields =
+        primaryFields.filter((primaryField) => {
+          return !secondaryFields.some(
+            (secondaryField) =>
+              normalizeFieldValue(
+                secondaryField.value
+              ) ===
+              normalizeFieldValue(
+                primaryField.value
+              )
+          );
+        });
+
       setText(
         "organizationLabel",
         data.logoText ||
@@ -892,8 +911,8 @@
 
       renderFieldRow(
         "desktopPrimaryFields",
-        data.fields?.primary?.length
-          ? data.fields.primary
+        data.fields
+          ? visiblePrimaryFields
           : [{ label: "EVENT", value: data.event || "Event" }],
         "primary-value"
       );
@@ -901,7 +920,7 @@
       renderFieldRow(
         "desktopSecondaryFields",
         data.fields
-          ? data.fields.secondary || []
+          ? secondaryFields
           : [{ label: "VENUE", value: data.venue || "—" }]
       );
 
@@ -962,6 +981,12 @@
     function formatFieldValue(value) {
       if (value === null || value === undefined || value === "") return "—";
       return String(value);
+    }
+
+    function normalizeFieldValue(value) {
+      return String(value ?? "")
+        .trim()
+        .toLocaleLowerCase();
     }
 
     function populateMobileExport(data) {
