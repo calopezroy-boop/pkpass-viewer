@@ -128,8 +128,32 @@
     }
 
     .ticket-header {
-      padding: 24px;
-      background: rgba(255, 255, 255, 0.08);
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      min-height: 92px;
+      padding: 20px 22px 16px;
+    }
+
+    .wallet-notch {
+      position: absolute;
+      top: -1px;
+      left: 50%;
+      width: 76px;
+      height: 27px;
+      border-radius: 0 0 38px 38px;
+      background: #05070b;
+      transform: translateX(-50%);
+    }
+
+    .ticket-header-left { max-width: 58%; }
+
+    .ticket-header-fields {
+      display: flex;
+      gap: 16px;
+      max-width: 42%;
+      text-align: right;
     }
 
     .desktop-logo {
@@ -138,8 +162,6 @@
       width: auto;
       max-width: 190px;
       max-height: 52px;
-
-      margin-bottom: 14px;
 
       object-fit: contain;
       object-position: left center;
@@ -153,19 +175,13 @@
       letter-spacing: 0.08em;
     }
 
-    .event-name {
-      font-size: 20px;
-      font-weight: 750;
-      line-height: 1.3;
-    }
-
     .ticket-artwork {
       display: none;
       align-items: center;
       justify-content: center;
 
       width: 100%;
-      height: 180px;
+      height: 150px;
       overflow: hidden;
 
       background: rgba(0, 0, 0, 0.18);
@@ -177,47 +193,71 @@
       width: 100%;
       height: 100%;
 
-      object-fit: contain;
+      object-fit: cover;
     }
 
     .ticket-body {
-      padding: 26px;
+      padding: 16px 22px 24px;
     }
 
     .label {
-      margin-bottom: 5px;
+      margin-bottom: 3px;
 
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.09em;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
 
       opacity: 0.85;
     }
 
     .value {
-      margin-bottom: 22px;
-      font-size: 22px;
+      margin-bottom: 12px;
+      font-size: 18px;
     }
+
+    .primary-value { font-size: 24px; line-height: 1.15; }
+
+    .wallet-field-row {
+      display: grid;
+      grid-template-columns: repeat(var(--field-count, 1), minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .wallet-field-group:empty { display: none; }
+
+    .wallet-field { min-width: 0; }
+    .wallet-field.align-center { text-align: center; }
+    .wallet-field.align-right { text-align: right; }
+
+    .wallet-field-value {
+      overflow-wrap: anywhere;
+      font-size: 20px;
+      line-height: 1.15;
+    }
+
+    .ticket-header-fields .label { font-size: 9px; }
+    .ticket-header-fields .wallet-field-value { font-size: 17px; }
 
     .seat-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
 
       gap: 14px;
-      margin: 28px 0;
+      margin: 8px 0 20px;
 
       text-align: center;
     }
 
     .seat-value {
-      font-size: 30px;
+      font-size: 26px;
     }
 
     .qr-wrapper {
-      width: min(320px, 100%);
+      width: min(230px, 72%);
 
-      padding: 20px;
-      margin: 18px auto 10px;
+      padding: 12px;
+      margin: 16px auto 8px;
 
       border-radius: 16px;
       background: white;
@@ -234,6 +274,15 @@
       text-align: center;
       font-family: monospace;
       font-size: 14px;
+    }
+
+    @media (max-width: 440px) {
+      body { padding: 18px 10px; }
+      .ticket-header { min-height: 82px; padding: 17px 17px 13px; }
+      .ticket-body { padding: 14px 17px 20px; }
+      .ticket-artwork { height: 132px; }
+      .wallet-field-row { gap: 9px; }
+      .wallet-field-value { font-size: 18px; }
     }
 
     .download-area {
@@ -500,22 +549,24 @@
       class="ticket"
     >
       <header class="ticket-header">
-        <img
-          id="desktopLogo"
-          class="desktop-logo"
-          alt="Ticket provider logo"
-        />
+        <div class="wallet-notch"></div>
 
-        <div
-          id="organizationLabel"
-          class="organization-text"
-        >
-          TICKET
+        <div class="ticket-header-left">
+          <img
+            id="desktopLogo"
+            class="desktop-logo"
+            alt="Ticket provider logo"
+          />
+
+          <div
+            id="organizationLabel"
+            class="organization-text"
+          >TICKET</div>
         </div>
 
         <div
-          id="eventName"
-          class="event-name"
+          id="desktopHeaderFields"
+          class="ticket-header-fields"
         ></div>
       </header>
 
@@ -530,58 +581,15 @@
       </div>
 
       <div class="ticket-body">
-        <div class="label">
-          DATE &amp; TIME
-        </div>
-
         <div
-          id="dateTime"
-          class="value"
+          id="desktopPrimaryFields"
         ></div>
 
-        <div class="label">
-          VENUE
-        </div>
-
         <div
-          id="venue"
-          class="value"
+          id="desktopSecondaryFields"
         ></div>
 
-        <div class="seat-grid">
-          <div>
-            <div class="label">
-              SECTION
-            </div>
-
-            <div
-              id="section"
-              class="seat-value"
-            ></div>
-          </div>
-
-          <div>
-            <div class="label">
-              ROW
-            </div>
-
-            <div
-              id="row"
-              class="seat-value"
-            ></div>
-          </div>
-
-          <div>
-            <div class="label">
-              SEAT
-            </div>
-
-            <div
-              id="seat"
-              class="seat-value"
-            ></div>
-          </div>
-        </div>
+        <div id="desktopAuxiliaryFields"></div>
 
         <div class="qr-wrapper">
           <img
@@ -877,42 +885,83 @@
         "TICKET"
       );
 
-      setText(
-        "eventName",
-        data.event || "Event"
+      renderFieldRow(
+        "desktopHeaderFields",
+        data.fields?.header || []
       );
 
-      setText(
-        "dateTime",
-        `${data.date || ""} ${
-          data.time || ""
-        }`.trim() || "—"
+      renderFieldRow(
+        "desktopPrimaryFields",
+        data.fields?.primary?.length
+          ? data.fields.primary
+          : [{ label: "EVENT", value: data.event || "Event" }],
+        "primary-value"
       );
 
-      setText(
-        "venue",
-        data.venue || "—"
+      renderFieldRow(
+        "desktopSecondaryFields",
+        data.fields
+          ? data.fields.secondary || []
+          : [{ label: "VENUE", value: data.venue || "—" }]
       );
 
-      setText(
-        "section",
-        data.section || "—"
-      );
-
-      setText(
-        "row",
-        data.row || "—"
-      );
-
-      setText(
-        "seat",
-        data.seat || "—"
+      renderFieldRow(
+        "desktopAuxiliaryFields",
+        data.fields?.auxiliary?.length
+          ? data.fields.auxiliary
+          : [
+              { label: "SECTION", value: data.section || "—" },
+              { label: "ROW", value: data.row || "—" },
+              { label: "SEAT", value: data.seat || "—" },
+            ]
       );
 
       setText(
         "barcodeNumber",
         data.barcodeMessage || ""
       );
+    }
+
+    function renderFieldRow(elementId, fields, valueClass = "") {
+      const group = document.getElementById(elementId);
+      group.replaceChildren();
+      group.className = "wallet-field-group";
+
+      for (let start = 0; start < fields.length; start += 3) {
+        const chunk = fields.slice(start, start + 3);
+        const row = document.createElement("div");
+        row.className = "wallet-field-row";
+        row.style.setProperty("--field-count", chunk.length);
+
+        chunk.forEach((field) => {
+          const item = document.createElement("div");
+          item.className = `wallet-field ${getAlignmentClass(field.textAlignment)}`;
+
+          const label = document.createElement("div");
+          label.className = "label";
+          label.textContent = field.label || "";
+
+          const value = document.createElement("div");
+          value.className = `wallet-field-value ${valueClass}`.trim();
+          value.textContent = formatFieldValue(field.value);
+
+          item.append(label, value);
+          row.append(item);
+        });
+
+        group.append(row);
+      }
+    }
+
+    function getAlignmentClass(alignment = "") {
+      if (alignment.includes("Center")) return "align-center";
+      if (alignment.includes("Right")) return "align-right";
+      return "";
+    }
+
+    function formatFieldValue(value) {
+      if (value === null || value === undefined || value === "") return "—";
+      return String(value);
     }
 
     function populateMobileExport(data) {
@@ -1317,18 +1366,16 @@
     }
 
     function createTicketFilename() {
-      const event =
-        getText("eventName") ||
-        "ticket";
+      const event = currentPassData?.event || "ticket";
 
       const section =
-        getText("section");
+        currentPassData?.section || "";
 
       const row =
-        getText("row");
+        currentPassData?.row || "";
 
       const seat =
-        getText("seat");
+        currentPassData?.seat || "";
 
       const parts = [
         event,

@@ -200,6 +200,17 @@ function getPassFields(pass) {
   );
 }
 
+function serializeFields(fields = []) {
+  return fields.map((field) => ({
+    key: String(field?.key ?? ""),
+    label: String(field?.label ?? ""),
+    value: field?.value ?? "",
+    textAlignment:
+      field?.textAlignment ??
+      "PKTextAlignmentNatural",
+  }));
+}
+
 /*
 |--------------------------------------------------------------------------
 | Analyze PKPass
@@ -537,6 +548,14 @@ app.post(
         backgroundImage,
 
         footerImage,
+
+        fields: {
+          header: serializeFields(headerFields),
+          primary: serializeFields(primaryFields),
+          secondary: serializeFields(secondaryFields),
+          auxiliary: serializeFields(auxiliaryFields),
+          back: serializeFields(backFields),
+        },
 
         barcodeFormat:
           barcode.format ?? "",
