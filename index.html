@@ -203,7 +203,7 @@
     .label {
       margin-bottom: 3px;
 
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.04em;
 
@@ -215,7 +215,7 @@
       font-size: 18px;
     }
 
-    .primary-value { font-size: 24px; line-height: 1.15; }
+    .primary-value { font-size: 27px; line-height: 1.15; }
 
     .wallet-field-row {
       display: grid;
@@ -232,12 +232,12 @@
 
     .wallet-field-value {
       overflow-wrap: anywhere;
-      font-size: 20px;
+      font-size: 24px;
       line-height: 1.15;
     }
 
-    .ticket-header-fields .label { font-size: 9px; }
-    .ticket-header-fields .wallet-field-value { font-size: 17px; }
+    .ticket-header-fields .label { font-size: 11px; }
+    .ticket-header-fields .wallet-field-value { font-size: 20px; }
 
     .seat-grid {
       display: grid;
@@ -288,7 +288,9 @@
       .ticket-body { padding: 14px 17px 20px; }
       .ticket-artwork { height: 132px; }
       .wallet-field-row { gap: 9px; }
-      .wallet-field-value { font-size: 18px; }
+      .wallet-field-value { font-size: 21px; }
+      .primary-value { font-size: 24px; }
+      .ticket-header-fields .wallet-field-value { font-size: 18px; }
     }
 
     .download-area {
@@ -993,7 +995,20 @@
 
     function formatFieldValue(value) {
       if (value === null || value === undefined || value === "") return "—";
-      return String(value);
+
+      const text = String(value);
+      const isoDate = text.match(
+        /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/
+      );
+
+      if (!isoDate) return text;
+
+      const [, year, month, day, hours, minutes] = isoDate;
+      const hour = Number(hours);
+      const displayHour = hour % 12 || 12;
+      const period = hour >= 12 ? "PM" : "AM";
+
+      return `${Number(month)}/${Number(day)}/${year.slice(-2)}, ${displayHour}:${minutes} ${period}`;
     }
 
     function normalizeFieldValue(value) {
@@ -1045,7 +1060,7 @@
 
       setText(
         "mobileDate",
-        data.date || ""
+        formatFieldValue(data.date || "")
       );
 
       setText(
