@@ -67,6 +67,18 @@
       backdrop-filter: blur(18px);
     }
 
+    .upload-box.dragging {
+      border-color: #60a5fa;
+      background: rgba(30, 64, 175, 0.2);
+    }
+
+    .drop-hint {
+      margin: 0 0 14px;
+      color: #aeb7c6;
+      font-size: 13px;
+      text-align: center;
+    }
+
     input {
       width: 100%;
       margin-bottom: 16px;
@@ -107,6 +119,65 @@
 
       color: #fecaca;
       background: #450a0a;
+    }
+
+    .batch-progress {
+      display: none;
+      padding: 14px;
+      margin-bottom: 20px;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.78);
+    }
+
+    .progress-summary {
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .progress-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      color: #cbd5e1;
+      font-size: 12px;
+    }
+
+    .progress-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .progress-item.error-status { color: #fca5a5; }
+    .progress-item.success-status { color: #86efac; }
+
+    .results-grid {
+      display: grid;
+      gap: 30px;
+    }
+
+    .ticket-result-title {
+      margin: 0 0 9px;
+      color: #cbd5e1;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .ticket-result .ticket { display: block; }
+
+    .ticket-download-button {
+      margin-top: 12px;
+      background: #16a34a;
+    }
+
+    .render-template {
+      position: fixed;
+      top: 0;
+      left: -10000px;
+      width: 520px;
     }
 
     /*
@@ -545,10 +616,15 @@
         id="pkpassFile"
         type="file"
         accept=".pkpass"
+        multiple
       />
 
+      <p class="drop-hint">
+        Select multiple files or drag and drop .pkpass files here.
+      </p>
+
       <button id="analyzeButton">
-        Analyze PKPass
+        Analyze PKPass Files
       </button>
     </section>
 
@@ -557,9 +633,30 @@
       class="error"
     ></div>
 
+    <section
+      id="batchProgress"
+      class="batch-progress"
+      aria-live="polite"
+    >
+      <div
+        id="progressSummary"
+        class="progress-summary"
+      ></div>
+
+      <ul
+        id="progressList"
+        class="progress-list"
+      ></ul>
+    </section>
+
+    <section
+      id="resultsGrid"
+      class="results-grid"
+    ></section>
+
     <article
       id="ticketCard"
-      class="ticket"
+      class="ticket render-template"
     >
       <header class="ticket-header">
         <div class="wallet-notch"></div>
@@ -623,7 +720,7 @@
       class="download-area"
     >
       <button id="downloadTicketButton">
-        Download Mobile Ticket
+        Download All Tickets (.zip)
       </button>
 
       <p class="privacy-note">
@@ -759,6 +856,10 @@
     src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
   ></script>
 
+  <script
+    src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+  ></script>
+
   <script>
     const fileInput =
       document.getElementById("pkpassFile");
@@ -788,7 +889,23 @@
         "mobileQrImage"
       );
 
+    const uploadBox =
+      document.querySelector(".upload-box");
+
+    const batchProgress =
+      document.getElementById("batchProgress");
+
+    const progressSummary =
+      document.getElementById("progressSummary");
+
+    const progressList =
+      document.getElementById("progressList");
+
+    const resultsGrid =
+      document.getElementById("resultsGrid");
+
     let currentPassData = null;
+    let analyzedPasses = [];
 
     analyzeButton.addEventListener(
       "click",
@@ -797,85 +914,122 @@
 
     downloadTicketButton.addEventListener(
       "click",
-      downloadMobileTicket
+      downloadAllTickets
     );
 
+    ["dragenter", "dragover"].forEach((eventName) => {
+      uploadBox.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        uploadBox.classList.add("dragging");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      uploadBox.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        uploadBox.classList.remove("dragging");
+      });
+    });
+
+    uploadBox.addEventListener("drop", (event) => {
+      const transfer = new DataTransfer();
+
+      Array.from(event.dataTransfer?.files || [])
+        .filter(isPkpassFile)
+        .forEach((file) => transfer.items.add(file));
+
+      fileInput.files = transfer.files;
+    });
+
     async function analyzePkpass() {
-      const file = fileInput.files[0];
+      const files = Array.from(fileInput.files);
 
       hideError();
-
       ticketCard.style.display = "none";
       downloadArea.style.display = "none";
+      resultsGrid.replaceChildren();
+      progressList.replaceChildren();
+      analyzedPasses = [];
 
-      if (!file) {
+      if (!files.length) {
         showError(
-          "Please select a .pkpass file."
+          "Please select one or more .pkpass files."
         );
 
         return;
       }
 
-      if (
-        !file.name
-          .toLowerCase()
-          .endsWith(".pkpass")
-      ) {
+      if (!files.every(isPkpassFile)) {
         showError(
-          "Please upload a valid .pkpass file."
+          "Every selected file must use the .pkpass extension."
         );
 
         return;
       }
 
-      const formData = new FormData();
-
-      formData.append("pkpass", file);
+      if (files.length > 50) {
+        showError("Please process no more than 50 tickets at once.");
+        return;
+      }
 
       analyzeButton.disabled = true;
-      analyzeButton.textContent =
-        "Analyzing...";
+      analyzeButton.textContent = "Analyzing 0 / " + files.length;
+      batchProgress.style.display = "block";
+      progressSummary.textContent = `Analyzing ${files.length} ticket${files.length === 1 ? "" : "s"}…`;
+
+      const statusItems = files.map((file) =>
+        createProgressItem(file.name)
+      );
+
+      let completed = 0;
 
       try {
-        const response = await fetch(
-          "/analyze-pkpass",
-          {
-            method: "POST",
-            body: formData,
-          }
+        const results = await Promise.all(
+          files.map(async (file, index) => {
+            try {
+              const data = await analyzeFile(file);
+              setProgressStatus(statusItems[index], "Analyzed", "success-status");
+              return { file, data, index };
+            } catch (error) {
+              setProgressStatus(
+                statusItems[index],
+                error instanceof Error ? error.message : "Failed",
+                "error-status"
+              );
+              return { file, error, index };
+            } finally {
+              completed += 1;
+              analyzeButton.textContent = `Analyzing ${completed} / ${files.length}`;
+            }
+          })
         );
 
-        const data =
-          await response.json();
+        for (const result of results) {
+          if (!result.data) continue;
 
-        if (!response.ok) {
-          throw new Error(
-            data.error ||
-            "Unable to analyze the file."
-          );
+          try {
+            await renderTicketResult(result.file, result.data);
+            analyzedPasses.push(result.data);
+            setProgressStatus(
+              statusItems[result.index],
+              "Ready",
+              "success-status"
+            );
+          } catch (error) {
+            console.error(error);
+            setProgressStatus(
+              statusItems[result.index],
+              "Unable to render",
+              "error-status"
+            );
+          }
         }
 
-        currentPassData = data;
+        currentPassData = analyzedPasses[0] || null;
 
-        populatePreview(data);
-        populateMobileExport(data);
-        applyPassDesign(data);
-
-        qrImage.src =
-          data.qrDataUrl;
-
-        mobileQrImage.src =
-          data.qrDataUrl;
-
-        await waitForRequiredImages();
-
-        ticketCard.style.display =
-          "block";
-
-        downloadArea.style.display =
-          "block";
-
-        fitBarcodeNumbers();
+        const failedCount = files.length - analyzedPasses.length;
+        progressSummary.textContent = `${analyzedPasses.length} ticket${analyzedPasses.length === 1 ? "" : "s"} ready${failedCount ? `, ${failedCount} failed` : ""}.`;
+        downloadArea.style.display = analyzedPasses.length ? "block" : "none";
       } catch (error) {
         console.error(error);
 
@@ -886,9 +1040,94 @@
         );
       } finally {
         analyzeButton.disabled = false;
-        analyzeButton.textContent =
-          "Analyze PKPass";
+        analyzeButton.textContent = "Analyze PKPass Files";
       }
+    }
+
+    function isPkpassFile(file) {
+      return file.name.toLowerCase().endsWith(".pkpass");
+    }
+
+    async function analyzeFile(file) {
+      const formData = new FormData();
+      formData.append("pkpass", file);
+
+      const response = await fetch("/analyze-pkpass", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to analyze this file.");
+      }
+
+      return data;
+    }
+
+    function createProgressItem(filename) {
+      const item = document.createElement("li");
+      item.className = "progress-item";
+
+      const name = document.createElement("span");
+      name.textContent = filename;
+
+      const status = document.createElement("span");
+      status.textContent = "Waiting";
+
+      item.append(name, status);
+      progressList.append(item);
+      return item;
+    }
+
+    function setProgressStatus(item, message, className) {
+      item.className = `progress-item ${className}`;
+      item.lastElementChild.textContent = message;
+    }
+
+    async function renderTicketResult(file, data) {
+      populatePreview(data);
+      applyPassDesign(data);
+      qrImage.src = data.qrDataUrl;
+      ticketCard.style.display = "block";
+
+      await waitForImages([
+        qrImage,
+        document.getElementById("desktopLogo"),
+        document.getElementById("desktopArtworkImage"),
+      ]);
+
+      fitTextToWidth(
+        document.getElementById("barcodeNumber"),
+        25
+      );
+
+      const result = document.createElement("section");
+      result.className = "ticket-result";
+
+      const title = document.createElement("h2");
+      title.className = "ticket-result-title";
+      title.textContent = file.name;
+
+      const card = ticketCard.cloneNode(true);
+      card.removeAttribute("id");
+      card.classList.remove("render-template");
+      card.removeAttribute("style");
+      card.querySelectorAll("[id]").forEach((element) => {
+        element.removeAttribute("id");
+      });
+
+      const button = document.createElement("button");
+      button.className = "ticket-download-button";
+      button.textContent = "Download Ticket Image";
+      button.addEventListener("click", () => {
+        downloadTicket(data, button);
+      });
+
+      result.append(title, card, button);
+      resultsGrid.append(result);
+      ticketCard.style.display = "none";
     }
 
     function populatePreview(data) {
@@ -1124,14 +1363,13 @@
       mobilePass.style.color =
         foregroundColor;
 
-      document
-        .querySelectorAll(
-          ".label, .mobile-label"
-        )
-        .forEach((label) => {
-          label.style.color =
-            labelColor;
-        });
+      [ticketCard, mobilePass].forEach((passElement) => {
+        passElement
+          .querySelectorAll(".label, .mobile-label")
+          .forEach((label) => {
+            label.style.color = labelColor;
+          });
+      });
 
       applyLogo(data);
       applyArtwork(data);
@@ -1280,113 +1518,124 @@
         ),
       ];
 
-      const activeImages =
-        images.filter((image) => {
-          return (
-            image &&
-            image.getAttribute("src")
-          );
-        });
-
-      await Promise.all(
-        activeImages.map(waitForImage)
-      );
+      await waitForImages(images);
     }
 
-    async function downloadMobileTicket() {
-      if (!currentPassData) {
-        showError(
-          "Analyze a PKPass before downloading."
-        );
+    async function waitForImages(images) {
+      const activeImages = images.filter((image) => {
+        return image && image.getAttribute("src");
+      });
 
+      await Promise.all(activeImages.map(waitForImage));
+    }
+
+    async function createMobileTicketBlob(data) {
+      populateMobileExport(data);
+      applyPassDesign(data);
+      mobileQrImage.src = data.qrDataUrl;
+
+      await waitForRequiredImages();
+      fitBarcodeNumbers();
+
+      const mobileExport =
+        document.getElementById("mobileExport");
+
+      const canvas = await html2canvas(mobileExport, {
+        scale: 3,
+        width: 390,
+        height: 844,
+        windowWidth: 390,
+        windowHeight: 844,
+        backgroundColor: "#101318",
+        useCORS: true,
+        logging: false,
+      });
+
+      return canvasToBlob(canvas);
+    }
+
+    async function downloadTicket(data, button) {
+      hideError();
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Preparing Ticket…";
+
+      try {
+        const blob = await createMobileTicketBlob(data);
+        triggerBlobDownload(blob, createTicketFilename(data));
+      } catch (error) {
+        console.error(error);
+        showError("Unable to download this ticket image.");
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+
+    async function downloadAllTickets() {
+      if (!analyzedPasses.length) {
+        showError("Analyze one or more PKPass files before downloading.");
         return;
       }
 
       hideError();
-
-      downloadTicketButton.disabled =
-        true;
-
-      downloadTicketButton.textContent =
-        "Preparing Mobile Ticket...";
+      downloadTicketButton.disabled = true;
 
       try {
-        populateMobileExport(
-          currentPassData
-        );
+        const zip = new JSZip();
+        const usedNames = new Set();
 
-        applyPassDesign(
-          currentPassData
-        );
+        for (let index = 0; index < analyzedPasses.length; index += 1) {
+          const data = analyzedPasses[index];
+          downloadTicketButton.textContent = `Preparing ${index + 1} / ${analyzedPasses.length}…`;
 
-        mobileQrImage.src =
-          currentPassData.qrDataUrl;
-
-        await waitForRequiredImages();
-        fitBarcodeNumbers();
-
-        const mobileExport =
-          document.getElementById(
-            "mobileExport"
+          const blob = await createMobileTicketBlob(data);
+          const filename = getUniqueFilename(
+            createTicketFilename(data),
+            usedNames
           );
 
-        const canvas =
-          await html2canvas(
-            mobileExport,
-            {
-              scale: 3,
-              width: 390,
-              height: 844,
-              windowWidth: 390,
-              windowHeight: 844,
-              backgroundColor: "#101318",
-              useCORS: true,
-              logging: false,
-            }
-          );
+          zip.file(filename, blob);
+        }
 
-        const imageBlob =
-          await canvasToBlob(canvas);
-
-        const imageUrl =
-          URL.createObjectURL(
-            imageBlob
-          );
-
-        const downloadLink =
-          document.createElement("a");
-
-        downloadLink.href =
-          imageUrl;
-
-        downloadLink.download =
-          createTicketFilename();
-
-        document.body.appendChild(
-          downloadLink
-        );
-
-        downloadLink.click();
-        downloadLink.remove();
-
-        setTimeout(() => {
-          URL.revokeObjectURL(
-            imageUrl
-          );
-        }, 1000);
+        downloadTicketButton.textContent = "Building ZIP…";
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        triggerBlobDownload(zipBlob, "pkpass-tickets.zip");
       } catch (error) {
         console.error(error);
-
-        showError(
-          "Unable to download the mobile ticket image."
-        );
+        showError("Unable to create the ticket ZIP file.");
       } finally {
-        downloadTicketButton.disabled =
-          false;
-
-        downloadTicketButton.textContent =
-          "Download Mobile Ticket";
+        downloadTicketButton.disabled = false;
+        downloadTicketButton.textContent = "Download All Tickets (.zip)";
       }
+    }
+
+    function getUniqueFilename(filename, usedNames) {
+      let candidate = filename;
+      let suffix = 2;
+      const extensionIndex = filename.lastIndexOf(".");
+      const base = extensionIndex >= 0 ? filename.slice(0, extensionIndex) : filename;
+      const extension = extensionIndex >= 0 ? filename.slice(extensionIndex) : "";
+
+      while (usedNames.has(candidate)) {
+        candidate = `${base}-${suffix}${extension}`;
+        suffix += 1;
+      }
+
+      usedNames.add(candidate);
+      return candidate;
+    }
+
+    function triggerBlobDownload(blob, filename) {
+      const imageUrl = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = imageUrl;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+
+      setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
     }
 
     function waitForImage(image) {
@@ -1446,17 +1695,17 @@
       );
     }
 
-    function createTicketFilename() {
-      const event = currentPassData?.event || "ticket";
+    function createTicketFilename(data = currentPassData) {
+      const event = data?.event || "ticket";
 
       const section =
-        currentPassData?.section || "";
+        data?.section || "";
 
       const row =
-        currentPassData?.row || "";
+        data?.row || "";
 
       const seat =
-        currentPassData?.seat || "";
+        data?.seat || "";
 
       const parts = [
         event,
