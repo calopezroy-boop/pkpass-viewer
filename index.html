@@ -269,11 +269,14 @@
     }
 
     .barcode-number {
+      margin-top: 7px;
       overflow-wrap: anywhere;
 
+      color: #111111;
       text-align: center;
-      font-family: monospace;
-      font-size: 14px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 17px;
+      line-height: 1.15;
     }
 
     @media (max-width: 440px) {
@@ -509,12 +512,14 @@
     }
 
     .mobile-barcode-number {
-      padding-bottom: 2px;
+      padding: 7px 2px 2px;
 
       overflow-wrap: anywhere;
 
-      font-family: monospace;
-      font-size: 10px;
+      color: #111111;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 15px;
+      line-height: 1.15;
     }
   </style>
 </head>
@@ -596,12 +601,12 @@
             id="qrImage"
             alt="Ticket barcode"
           />
-        </div>
 
-        <div
-          id="barcodeNumber"
-          class="barcode-number"
-        ></div>
+          <div
+            id="barcodeNumber"
+            class="barcode-number"
+          ></div>
+        </div>
       </div>
     </article>
 
@@ -731,12 +736,12 @@
               id="mobileQrImage"
               alt="Ticket barcode"
             />
-          </div>
 
-          <div
-            id="mobileBarcodeNumber"
-            class="mobile-barcode-number"
-          ></div>
+            <div
+              id="mobileBarcodeNumber"
+              class="mobile-barcode-number"
+            ></div>
+          </div>
         </div>
       </div>
     </article>
