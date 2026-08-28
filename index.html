@@ -194,6 +194,24 @@
       background: #16a34a;
     }
 
+    .prepared-download-link {
+      display: block;
+      width: 100%;
+      padding: 14px 18px;
+      margin-top: 12px;
+      border-radius: 14px;
+      color: #ffffff;
+      background: #16a34a;
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .prepared-download-link:hover {
+      background: #15803d;
+    }
+
     .render-template {
       position: fixed;
       top: 0;
@@ -927,6 +945,7 @@
 
     let currentPassData = null;
     let analyzedPasses = [];
+    const preparedDownloadUrls = new Set();
 
     analyzeButton.addEventListener(
       "click",
@@ -966,6 +985,7 @@
       const files = Array.from(fileInput.files);
 
       hideError();
+      clearPreparedDownloads();
       ticketCard.style.display = "none";
       downloadArea.style.display = "none";
       resultsGrid.replaceChildren();
@@ -1582,7 +1602,14 @@
 
       try {
         const blob = await createMobileTicketBlob(data);
-        triggerBlobDownload(blob, createTicketFilename(data));
+        const link = createPreparedDownloadLink(
+          blob,
+          createTicketFilename(data),
+          "Save Ticket Image"
+        );
+
+        button.replaceWith(link);
+        link.click();
       } catch (error) {
         console.error(error);
         showError("Unable to download this ticket image.");
@@ -1620,7 +1647,15 @@
 
         downloadTicketButton.textContent = "Building ZIP…";
         const zipBlob = await zip.generateAsync({ type: "blob" });
-        triggerBlobDownload(zipBlob, "pkpass-tickets.zip");
+        const link = createPreparedDownloadLink(
+          zipBlob,
+          "pkpass-tickets.zip",
+          "Save All Tickets (.zip)"
+        );
+
+        downloadTicketButton.insertAdjacentElement("afterend", link);
+        downloadTicketButton.style.display = "none";
+        link.click();
       } catch (error) {
         console.error(error);
         showError("Unable to create the ticket ZIP file.");
@@ -1646,16 +1681,25 @@
       return candidate;
     }
 
-    function triggerBlobDownload(blob, filename) {
-      const imageUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement("a");
-      downloadLink.href = imageUrl;
-      downloadLink.download = filename;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      downloadLink.remove();
+    function createPreparedDownloadLink(blob, filename, label) {
+      const downloadUrl = URL.createObjectURL(blob);
+      preparedDownloadUrls.add(downloadUrl);
 
-      setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
+      const link = document.createElement("a");
+      link.className = "prepared-download-link";
+      link.href = downloadUrl;
+      link.download = filename;
+      link.textContent = label;
+      return link;
+    }
+
+    function clearPreparedDownloads() {
+      preparedDownloadUrls.forEach((url) => URL.revokeObjectURL(url));
+      preparedDownloadUrls.clear();
+      document.querySelectorAll(".prepared-download-link").forEach((link) => {
+        link.remove();
+      });
+      downloadTicketButton.style.display = "block";
     }
 
     function waitForImage(image) {
