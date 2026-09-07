@@ -306,6 +306,17 @@
       object-fit: cover;
     }
 
+    .ticket-artwork.native-strip,
+    .mobile-artwork.native-strip {
+      height: auto;
+      aspect-ratio: var(--artwork-ratio, 375 / 98);
+    }
+
+    .ticket-artwork.native-strip img,
+    .mobile-artwork.native-strip img {
+      object-fit: contain;
+    }
+
     .ticket-body {
       padding: 16px 22px 24px;
     }
@@ -1515,7 +1526,44 @@
           "mobileArtworkImage"
         );
 
+      const usesNativeStrip =
+        Boolean(data.stripImage);
+
+      [desktopArtwork, mobileArtwork].forEach(
+        (artwork) => {
+          artwork.classList.toggle(
+            "native-strip",
+            usesNativeStrip
+          );
+
+          artwork.style.removeProperty(
+            "--artwork-ratio"
+          );
+        }
+      );
+
       if (artworkSource) {
+        const applyNativeRatio = (image) => {
+          if (
+            !usesNativeStrip ||
+            !image.naturalWidth ||
+            !image.naturalHeight
+          ) {
+            return;
+          }
+
+          image.parentElement.style.setProperty(
+            "--artwork-ratio",
+            `${image.naturalWidth} / ${image.naturalHeight}`
+          );
+        };
+
+        desktopArtworkImage.onload = () =>
+          applyNativeRatio(desktopArtworkImage);
+
+        mobileArtworkImage.onload = () =>
+          applyNativeRatio(mobileArtworkImage);
+
         desktopArtworkImage.src =
           artworkSource;
 
@@ -1533,7 +1581,13 @@
 
         mobileArtwork.style.display =
           "flex";
+
+        applyNativeRatio(desktopArtworkImage);
+        applyNativeRatio(mobileArtworkImage);
       } else {
+        desktopArtworkImage.onload = null;
+        mobileArtworkImage.onload = null;
+
         desktopArtworkImage.removeAttribute(
           "src"
         );
