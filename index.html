@@ -670,6 +670,34 @@
       line-height: 1.15;
       white-space: nowrap;
     }
+
+    .input-panels { display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:1100px; margin:24px auto; align-items:start; }
+    .input-panels .upload-box { width:100%; margin:0; }
+    .merge-box { padding:22px; border:1px solid #334155; border-radius:20px; background:#0f172ac7; }
+    .input-panels h2 { font-size:18px; margin:0 0 16px; }
+    .merge-box p { color:#aeb7c6; font-size:13px; line-height:1.5; }
+    .merge-box label { display:block; margin:16px 0 8px; font-size:13px; }
+    #mergeStatus[data-error="true"] { color:#fca5a5; }
+    @media(max-width:800px) { .input-panels { grid-template-columns:1fr; } }
+    .mobile-export,.mobile-pass { height:640px; }
+    .mobile-header { min-height:90px; flex-shrink:0; padding:18px 20px 12px; }
+    .mobile-date { font-size:18px; }
+    .mobile-header-right { max-width:72%; }
+    .mobile-artwork,.mobile-artwork.native-strip { height:130px; min-height:130px; flex-shrink:0; aspect-ratio:auto; }
+    .mobile-artwork.native-strip img { height:100%; object-fit:contain; }
+    .mobile-body { min-height:0; padding:14px 20px; }
+    .mobile-field-row { margin-bottom:10px; }
+    .mobile-field-value { font-size:17px; }
+    #mobileAuxiliaryFields .mobile-field-row:has(> :nth-child(3)) { grid-template-columns:2.5fr 1fr 1fr; }
+    .mobile-qr-section { flex-shrink:0; }
+    .mobile-qr-wrapper { width:224px; margin-bottom:0; }
+    .ticket-header,.mobile-header { align-items:center; gap:12px; }
+    .ticket-header-left,.mobile-header-left { flex:0 0 auto; max-width:30%; }
+    .ticket-header-fields,#desktopHeaderFields,.mobile-header-right { margin-left:auto; text-align:right; min-width:0; max-width:68%; padding-top:12px; }
+    #desktopHeaderFields .wallet-field-row { display:block; margin:0; }
+    #desktopHeaderFields .wallet-field { text-align:right; }
+    #desktopHeaderFields .wallet-field-value { font-size:18px; }
+    #desktopHeaderFields .label { font-size:15px; }
   </style>
 </head>
 
@@ -678,10 +706,11 @@
     <h1 class="page-heading">PKPass Viewer</h1>
 
     <p class="subtitle">
-      Upload your own Apple Wallet ticket.
+      Batch ticket images · Ticket Pass Studio size: 780 × 1280 px
     </p>
 
-    <section class="upload-box">
+    <div class="input-panels"><section class="upload-box">
+      <h2>PKPass → ticket images</h2>
       <input
         id="pkpassFile"
         type="file"
@@ -697,6 +726,18 @@
         Analyze PKPass Files
       </button>
     </section>
+
+    <section class="merge-box">
+      <h2>HAR + PKPass merger</h2>
+      <p>Use a template’s artwork with tickets from a FansFirst Tickets HAR. Files are processed in this browser.</p>
+      <label for="mergeTemplate">Template .pkpass</label>
+      <input id="mergeTemplate" type="file" accept=".pkpass" />
+      <label for="mergeHar">Ticket page .har</label>
+      <input id="mergeHar" type="file" accept=".har" />
+      <button id="mergeButton">Generate viewer passes (.zip)</button>
+      <p id="mergeStatus" role="status" aria-live="polite">One .pkpass per ticket, ready to load in the viewer.</p>
+      <div id="mergeDownload"></div>
+    </section></div>
 
     <div
       id="errorBox"
@@ -1173,10 +1214,10 @@
         "TICKET"
       );
 
-      renderFieldRow(
-        "desktopHeaderFields",
-        data.fields?.header || []
-      );
+      const header = getDateTimeHeader(data);
+      renderFieldRow("desktopHeaderFields", header
+        ? [{label: header.time, value: header.date, textAlignment: "PKTextAlignmentRight"}]
+        : data.fields?.header || []);
 
       renderFieldRow(
         "desktopPrimaryFields",
@@ -1298,7 +1339,16 @@
       }
     }
 
+    function getDateTimeHeader(data) {
+      const first = data.fields?.header?.[0];
+      const value = String(first?.value || data.date || "");
+      const match = value.match(/^(.*?)[ ,]+(\d{1,2}:\d{2}\s*[AP]M)$/i);
+      if (match) return {date: match[1].replace(/,\s*$/, ""), time: match[2]};
+      if (data.date || first) return {date: value, time: String(data.time || first?.label || "")};
+      return null;
+    }
     function populateMobileExport(data) {
+      const header = getDateTimeHeader(data);
       setText(
         "mobileOrganization",
         data.logoText ||
@@ -1309,12 +1359,12 @@
 
       setText(
         "mobileTime",
-        data.time || ""
+        header?.time || ""
       );
 
       setText(
         "mobileDate",
-        formatFieldValue(data.date || "")
+        formatFieldValue(header?.date || "")
       );
 
       renderMobileFieldRow(
@@ -1633,7 +1683,13 @@
       await Promise.all(activeImages.map(waitForImage));
     }
 
-    async function createMobileTicketBlob(data) {
+    let exportQueue = Promise.resolve();
+    function createMobileTicketBlob(data) {
+      const pending = exportQueue.then(() => renderMobileTicketBlob(data));
+      exportQueue = pending.catch(() => {});
+      return pending;
+    }
+    async function renderMobileTicketBlob(data) {
       populateMobileExport(data);
       applyPassDesign(data);
       mobileQrImage.src = data.qrDataUrl;
@@ -1644,12 +1700,19 @@
       const mobileExport =
         document.getElementById("mobileExport");
 
+      const body = mobileExport.querySelector('.mobile-body');
+      // Fit unusually long source fields while preserving barcode size and aspect ratio.
+      for (let size = 17; size >= 11; size -= 0.5) {
+        mobileExport.querySelectorAll('.mobile-field-value').forEach(el => el.style.fontSize = `${size}px`);
+        if (body.scrollHeight <= body.clientHeight + 1) break;
+      }
+      if (body.scrollHeight > body.clientHeight + 1) throw new Error('Ticket fields exceed the image layout.');
       const canvas = await html2canvas(mobileExport, {
-        scale: 3,
+        scale: 2,
         width: 390,
-        height: 816,
+        height: 640,
         windowWidth: 390,
-        windowHeight: 816,
+        windowHeight: 640,
         backgroundColor: null,
         useCORS: true,
         logging: false,
@@ -1900,6 +1963,40 @@
       errorBox.style.display =
         "none";
     }
+  </script>
+
+  <script src="pass-merger.js"></script>
+  <script>
+    document.getElementById('mergeButton').addEventListener('click', async () => {
+      const button = document.getElementById('mergeButton');
+      const status = document.getElementById('mergeStatus');
+      const download = document.getElementById('mergeDownload');
+      download.querySelectorAll('a').forEach(a => URL.revokeObjectURL(a.href));
+      download.replaceChildren();
+      status.dataset.error = 'false';
+      button.disabled = true;
+      try {
+        const template = document.getElementById('mergeTemplate').files[0];
+        const har = document.getElementById('mergeHar').files[0];
+        if (!template || !har) throw Error('Choose both a template .pkpass and a ticket .har file.');
+        if (!/\.pkpass$/i.test(template.name) || !/\.har$/i.test(har.name)) throw Error('Choose a .pkpass template and a .har export.');
+        if (template.size > 10 * 1024 * 1024 || har.size > 50 * 1024 * 1024) throw Error('Use a template under 10 MB and a HAR under 50 MB.');
+        status.textContent = 'Reading ticket records…';
+        const result = PassMerger.extract(JSON.parse(await har.text()));
+        const bytes = await PassMerger.generate(await template.arrayBuffer(), result.tickets, JSZip,
+          (done, total) => status.textContent = `Generating ${done} / ${total} passes…`);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob([bytes], {type:'application/zip'}));
+        link.download = 'viewer-pkpasses.zip';
+        link.textContent = `Download ${result.tickets.length} viewer passes (.zip)`;
+        link.className = 'prepared-download-link';
+        download.append(link);
+        status.textContent = `${result.tickets.length} passes ready. Extract the ZIP and select the .pkpass files on the left.` + (result.skipped ? ` Skipped ${result.skipped} incomplete records.` : '');
+      } catch (error) {
+        status.dataset.error = 'true';
+        status.textContent = error.message;
+      } finally { button.disabled = false; }
+    });
   </script>
 </body>
 </html>
